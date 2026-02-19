@@ -43,6 +43,9 @@ class LateScalpStrategy(BaseStrategy):
             signal.market_up_cents if self._buy_side == OrderSide.UP else signal.market_down_cents
         )
         if token_price <= 50:
+            # Set tracker context for the SELL order DB write
+            if hasattr(self.tracker, 'set_context'):
+                self.tracker.set_context(self.name.value, signal.marketSlug)
             self.sell_order_id = self.tracker.submit_sell(
                 self._buy_side, size=100, price=50, paired_buy_id=self.buy_order_id
             )
@@ -79,6 +82,7 @@ class LateScalpStrategy(BaseStrategy):
                 self.outcome = "LOSS"
 
         self.phase = StrategyPhase.COMPLETED
+        self._emit_run_completed()
 
     def reset(self) -> None:
         super().reset()

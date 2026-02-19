@@ -47,7 +47,7 @@ class TestTwoPhaseLifecycle:
         sig = make_signal(timeLeftMin=1.5, marketUp=0.95, signal="BUY UP")
         s.enter(sig)
         buy = tracker.get_order(s.buy_order_id)
-        assert buy.limit_price == 93
+        assert buy.limit_price == 94
         assert buy.size == 100
         assert s.phase == StrategyPhase.ENTERING
 
@@ -55,7 +55,7 @@ class TestTwoPhaseLifecycle:
         s, tracker = strat
         sig = make_signal(timeLeftMin=1.5, marketUp=0.95, signal="BUY UP")
         s.enter(sig)
-        tracker.update_prices(market_up=93, market_down=7)
+        tracker.update_prices(market_up=94, market_down=6)
         s.tick(sig)
         assert s.phase == StrategyPhase.RUNNING
 
@@ -64,7 +64,7 @@ class TestTwoPhaseLifecycle:
         sig = make_signal(timeLeftMin=1.5, marketUp=0.95, signal="BUY UP")
         s.enter(sig)
         # BUY fills
-        tracker.update_prices(market_up=93, market_down=7)
+        tracker.update_prices(market_up=94, market_down=6)
         s.tick(sig)
         assert s.phase == StrategyPhase.RUNNING
 
@@ -80,8 +80,8 @@ class TestTwoPhaseLifecycle:
         s.tick(sig2)
         assert s.phase == StrategyPhase.COMPLETED
         assert s.outcome == "LOSS"
-        # P&L: (50 - 93) * 100 = -4300 cents
-        assert s.pnl_cents == -4300
+        # P&L: (50 - 94) * 100 = -4400 cents
+        assert s.pnl_cents == -4400
 
 
 class TestExpiry:
@@ -94,11 +94,11 @@ class TestExpiry:
         assert s.pnl_cents == 0
 
     def test_buy_filled_market_resolves_in_favor_win(self, strat):
-        """BUY UP at 93¢, market resolves UP → shares worth 100¢ → WIN."""
+        """BUY UP at 94¢, market resolves UP → shares worth 100¢ → WIN."""
         s, tracker = strat
         sig = make_signal(timeLeftMin=1.5, marketUp=0.95, signal="BUY UP")
         s.enter(sig)
-        tracker.update_prices(market_up=93, market_down=7)
+        tracker.update_prices(market_up=94, market_down=6)
         s.tick(sig)
         assert s.phase == StrategyPhase.RUNNING
 
@@ -106,29 +106,29 @@ class TestExpiry:
         expire_sig = make_signal(timeLeftMin=0, marketUp=0.96, signal="BUY UP")
         s.on_market_expired(expire_sig)
         assert s.outcome == "WIN"
-        # (100 - 93) * 100 = 700 cents
-        assert s.pnl_cents == 700
+        # (100 - 94) * 100 = 600 cents
+        assert s.pnl_cents == 600
 
     def test_buy_filled_market_resolves_against_loss(self, strat):
-        """BUY UP at 93¢, market resolves DOWN → shares worth 0¢ → LOSS."""
+        """BUY UP at 94¢, market resolves DOWN → shares worth 0¢ → LOSS."""
         s, tracker = strat
         sig = make_signal(timeLeftMin=1.5, marketUp=0.95, signal="BUY UP")
         s.enter(sig)
-        tracker.update_prices(market_up=93, market_down=7)
+        tracker.update_prices(market_up=94, market_down=6)
         s.tick(sig)
 
         expire_sig = make_signal(timeLeftMin=0, signal="BUY DOWN")
         s.on_market_expired(expire_sig)
         assert s.outcome == "LOSS"
-        # -93 * 100 = -9300 cents
-        assert s.pnl_cents == -9300
+        # -94 * 100 = -9400 cents
+        assert s.pnl_cents == -9400
 
     def test_buy_filled_sell_submitted_not_filled_win(self, strat):
         """BUY fills, SELL submitted but not filled, market resolves in favor → WIN."""
         s, tracker = strat
         sig = make_signal(timeLeftMin=1.5, marketUp=0.95, signal="BUY UP")
         s.enter(sig)
-        tracker.update_prices(market_up=93, market_down=7)
+        tracker.update_prices(market_up=94, market_down=6)
         s.tick(sig)
 
         # Price dips to 50, SELL submitted
@@ -140,4 +140,4 @@ class TestExpiry:
         expire_sig = make_signal(timeLeftMin=0, marketUp=0.96, signal="BUY UP")
         s.on_market_expired(expire_sig)
         assert s.outcome == "WIN"
-        assert s.pnl_cents == 700
+        assert s.pnl_cents == 600

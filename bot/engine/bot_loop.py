@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 
 from bot.config import BotConfig
+from bot.db import close_db, insert_ta_signal, open_db
+from bot.db_events import DbEventCollector
 from bot.engine.market_manager import MarketManager
 from bot.engine.pnl_tracker import PnLTracker
 from bot.engine.strategy_engine import StrategyEngine
@@ -28,6 +30,13 @@ class BotLoop:
         self.engine = StrategyEngine(config, self.tracker, self.pnl)
         self._state = BotState(mode=config.mode)
         self._running = False
+        self._db = None
+        self._db_events = DbEventCollector()
+
+        # Wire DB event collector into all components
+        self.tracker.set_db_events(self._db_events)
+        self.market_mgr.set_db_events(self._db_events)
+        self.engine.set_db_events(self._db_events)
 
     @property
     def state(self) -> BotState:
@@ -35,9 +44,15 @@ class BotLoop:
 
     async def run_forever(self) -> None:
         self._running = True
-        while self._running:
-            await self._tick()
-            await asyncio.sleep(1)
+        self._db = await open_db(self.config.db_path)
+        try:
+            while self._running:
+                await self._tick()
+                await asyncio.sleep(1)
+        finally:
+            if self._db:
+                await close_db(self._db)
+                self._db = None
 
     def stop(self) -> None:
         self._running = False
@@ -47,11 +62,25 @@ class BotLoop:
             signal = await read_ta_signal(self.config.ta_json_path)
             self._process_signal(signal)
             self._build_state(signal)
+            # Flush DB events collected during the sync phase
+            await self._flush_db(signal)
         except FileNotFoundError:
             self._state.error = f"TA file not found: {self.config.ta_json_path}"
         except Exception as e:
             logger.exception("Tick error")
             self._state.error = str(e)
+
+    async def _flush_db(self, signal: TASignal) -> None:
+        """Persist TA signal and any buffered DB events in a single commit."""
+        if self._db is None:
+            return
+        try:
+            await insert_ta_signal(self._db, signal)
+            await self._db_events.flush(self._db)
+            await self._db.commit()
+        except Exception:
+            logger.exception("DB flush error")
+            self._db_events.clear()
 
     def _process_signal(self, signal: TASignal) -> None:
         # Check for market change

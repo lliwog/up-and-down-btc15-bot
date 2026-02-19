@@ -64,3 +64,4 @@ class EarlyEntryStrategy(BaseStrategy):
             self.outcome = "LOSS"
 
         self.phase = self.phase.COMPLETED
+        self._emit_run_completed()

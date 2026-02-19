@@ -73,7 +73,7 @@ class TestBotLoopIntegration:
         assert s3.phase == StrategyPhase.ENTERING
 
         # Tick 2: BUY fills
-        sig2 = make_signal(timeLeftMin=1.2, marketUp=0.93, signal="BUY UP")
+        sig2 = make_signal(timeLeftMin=1.2, marketUp=0.94, signal="BUY UP")
         bot.tick_with_signal(sig2)
         s3 = next(s for s in bot.state.strategies if s.name == StrategyName.LATE_SCALP)
         assert s3.phase == StrategyPhase.RUNNING
@@ -84,8 +84,8 @@ class TestBotLoopIntegration:
             marketSlug="new-market",
         )
         bot.tick_with_signal(sig3)
-        # P&L from S3 WIN: (100-93)*100 = 700
-        assert bot.state.global_pnl_cents == 700
+        # P&L from S3 WIN: (100-94)*100 = 600
+        assert bot.state.global_pnl_cents == 600
 
     def test_no_ta_file_sets_error(self, bot: BotLoop):
         """When TA file is missing, state.error is set."""

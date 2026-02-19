@@ -24,6 +24,7 @@ class BotConfig(BaseSettings):
     strategies: StrategyFlags = StrategyFlags()
     host: str = "0.0.0.0"
     port: int = 8080
+    db_path: str = "bot_history.db"
 
     @property
     def ta_json_path(self) -> Path:

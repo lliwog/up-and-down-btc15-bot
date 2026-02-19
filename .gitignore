@@ -67,3 +67,6 @@ ENV/
 Thumbs.db
 
 config.yaml
+*.db
+*.db-shm
+*.db-wal

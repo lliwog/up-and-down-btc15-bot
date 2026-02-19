@@ -15,7 +15,7 @@ pytest tests/test_early_entry.py -v
 pytest tests/test_early_entry.py::TestShouldEnter::test_all_conditions_met -v
 
 # Install dependencies
-pip install fastapi "uvicorn[standard]" pydantic pydantic-settings pyyaml sse-starlette aiofiles pytest pytest-asyncio httpx
+pip install fastapi "uvicorn[standard]" pydantic pydantic-settings pyyaml sse-starlette aiofiles aiosqlite pytest pytest-asyncio httpx
 
 # Start server (DRYRUN mode)
 BOT_CONFIG=config.example.yaml uvicorn bot.main:app --host 0.0.0.0 --port 8080
@@ -47,6 +47,16 @@ TA JSON file → TAReader → TASignal
 - **Entry vs tick separation** — `should_enter()` is called by StrategyEngine (controls mutual exclusion); `tick()` handles state transitions within the strategy.
 - **BotState is a full snapshot** — every SSE message contains complete state, no deltas.
 - **Bot loop as asyncio task** — launched in FastAPI's `lifespan`, runs alongside the web server.
+
+### Historical Data Store
+
+SQLite database (`bot_history.db` by default) stores every unique TA signal, all orders, and strategy run outcomes for offline analysis.
+
+- **`bot/db.py`** — schema (`CREATE IF NOT EXISTS`), async CRUD functions using `aiosqlite`.
+- **`bot/db_events.py`** — `DbEventCollector` buffers write events during the synchronous tick phase; flushed by the async `BotLoop._tick()` after processing.
+- **Deduplication** — `ta_signals` has a `UNIQUE(timestamp, market_slug)` constraint; `INSERT OR IGNORE` skips duplicates.
+- **4 tables** — `ta_signals`, `markets`, `orders`, `strategy_runs`.
+- **No ORM / no migrations** — raw SQL, schema is idempotent via `CREATE IF NOT EXISTS`.
 
 ### Strategy State Machine
 

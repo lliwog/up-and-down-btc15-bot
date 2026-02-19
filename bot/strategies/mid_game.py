@@ -61,3 +61,4 @@ class MidGameStrategy(BaseStrategy):
             self.outcome = "LOSS"
 
         self.phase = StrategyPhase.COMPLETED
+        self._emit_run_completed()

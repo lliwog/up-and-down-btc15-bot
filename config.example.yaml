@@ -22,3 +22,6 @@ strategies:
 # Web server
 host: "0.0.0.0"
 port: 8080
+
+# SQLite database for historical data (TA signals, orders, strategy runs)
+db_path: "bot_history.db"

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from bot.config import BotConfig
 from bot.engine.pnl_tracker import PnLTracker
 from bot.models.strategy_state import StrategyPhase, StrategySnapshot
@@ -9,6 +11,9 @@ from bot.strategies.base import BaseStrategy
 from bot.strategies.early_entry import EarlyEntryStrategy
 from bot.strategies.late_scalp import LateScalpStrategy
 from bot.strategies.mid_game import MidGameStrategy
+
+if TYPE_CHECKING:
+    from bot.db_events import DbEventCollector
 
 
 class StrategyEngine:
@@ -26,6 +31,11 @@ class StrategyEngine:
             self._all_strategies.append(MidGameStrategy(tracker))
         if config.strategies.late_scalp:
             self._all_strategies.append(LateScalpStrategy(tracker))
+
+    def set_db_events(self, events: DbEventCollector) -> None:
+        """Set the DB event collector on the engine and all strategies."""
+        for strat in self._all_strategies:
+            strat.set_db_events(events)
 
     @property
     def strategies(self) -> list[BaseStrategy]:

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 from bot.models.order import Order, OrderStatus
 from bot.models.strategy_state import StrategyName, StrategyPhase, StrategySnapshot
 from bot.models.ta_signal import TASignal
 from bot.order_tracker.interface import OrderTracker
+
+if TYPE_CHECKING:
+    from bot.db_events import DbEventCollector
 
 
 class BaseStrategy(ABC):
@@ -18,6 +22,12 @@ class BaseStrategy(ABC):
         self.sell_order_id: str | None = None
         self.pnl_cents: int = 0
         self.outcome: str | None = None
+        self._db_events: DbEventCollector | None = None
+        self._market_slug: str = ""
+        self._db_run_id: int | None = None
+
+    def set_db_events(self, events: DbEventCollector) -> None:
+        self._db_events = events
 
     # ── Public interface ──
 
@@ -27,8 +37,19 @@ class BaseStrategy(ABC):
 
     def enter(self, signal: TASignal) -> None:
         """Submit BUY (and possibly SELL) orders, transition to ENTERING."""
+        self._market_slug = signal.marketSlug
+        # Set tracker context so order inserts get the right strategy/market
+        if hasattr(self.tracker, 'set_context'):
+            self.tracker.set_context(self.name.value, signal.marketSlug)
         self._do_enter(signal)
         self.phase = StrategyPhase.ENTERING
+        if self._db_events:
+            self._db_events.strategy_run_started(
+                self.name.value,
+                signal.marketSlug,
+                self.phase.value,
+                self._set_run_id,
+            )
 
     def tick(self, signal: TASignal) -> None:
         """Called every second while strategy is active (not PENDING/COMPLETED)."""
@@ -50,6 +71,22 @@ class BaseStrategy(ABC):
         self.sell_order_id = None
         self.pnl_cents = 0
         self.outcome = None
+        self._db_run_id = None
+        self._market_slug = ""
+
+    def _set_run_id(self, run_id: int) -> None:
+        """Callback used by DbEventCollector to store the DB row id."""
+        self._db_run_id = run_id
+
+    def _emit_run_completed(self) -> None:
+        """Emit a strategy run completion event to the DB collector."""
+        if self._db_events and self._db_run_id is not None:
+            self._db_events.strategy_run_ended(
+                self._db_run_id,
+                self.phase.value,
+                self.outcome,
+                self.pnl_cents,
+            )
 
     def snapshot(self) -> StrategySnapshot:
         orders: list[Order] = []
@@ -104,6 +141,7 @@ class BaseStrategy(ABC):
         self.pnl_cents = (sell_price - buy_price) * buy_order.size
         self.outcome = "WIN" if self.pnl_cents > 0 else "LOSS"
         self.phase = StrategyPhase.COMPLETED
+        self._emit_run_completed()
 
     @abstractmethod
     def _do_expire(self, signal: TASignal) -> None:
