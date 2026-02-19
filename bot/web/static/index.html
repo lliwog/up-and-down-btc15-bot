@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Up &amp; Down BTC15 Bot</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Up &amp; Down BTC15 Bot</h1>
+    <div id="mode-badge" class="badge">DRYRUN</div>
+    <div id="connection-status" class="badge badge-disconnected">Disconnected</div>
+  </header>
+
+  <section id="market-panel" class="panel">
+    <div class="market-header">
+      <h2>Market <span id="market-slug" class="market-slug-label">—</span></h2>
+      <span id="time-left" class="time-left-value">—</span>
+    </div>
+    <div class="grid">
+      <div class="cell"><span class="label">Price to Beat</span><span id="price-to-beat" class="value">—</span></div>
+      <div class="cell"><span class="label">BTC Price</span><span id="current-price" class="value">—</span></div>
+      <div class="cell"><span class="label">TA Predict</span><span id="ta-predict" class="value">—</span></div>
+      <div class="cell"><span class="label">Signal</span><span id="signal" class="value">—</span></div>
+      <div class="cell"><span class="label">Recommendation</span><span id="recommendation" class="value">—</span></div>
+      <div class="cell"><span class="label">Market UP</span><span id="market-up" class="value">—</span></div>
+      <div class="cell"><span class="label">Market DOWN</span><span id="market-down" class="value">—</span></div>
+    </div>
+  </section>
+
+  <section id="pnl-panel" class="panel">
+    <h2>Global P&amp;L</h2>
+    <div id="global-pnl" class="pnl-value">$0.00</div>
+  </section>
+
+  <section id="strategies-panel">
+    <h2>Strategies</h2>
+    <div id="strategy-cards" class="strategy-grid"></div>
+  </section>
+
+  <section id="error-panel" class="panel hidden">
+    <h2>Error</h2>
+    <div id="error-message" class="error-text"></div>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Up & Down BTC15 Bot Configuration
+
+# Path to the directory containing the TA JSON file
+ta_json_dir: "/path/to/ta-output"
+
+# TA JSON filename (written by PolymarketBTC15mAssistant)
+ta_json_filename: "signal.json"
+
+# Operation mode: DRYRUN or LIVE
+mode: "DRYRUN"
+
+# Polymarket credentials (required for LIVE mode only)
+# Set via environment variable only:
+#   BOT_POLYMARKET_PRIVATE_KEY="..."
+
+# Per-strategy enable/disable
+strategies:
+  early_entry: true
+  mid_game: true
+  late_scalp: true
+
+# Web server
+host: "0.0.0.0"
+port: 8080
