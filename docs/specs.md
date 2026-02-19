@@ -137,7 +137,7 @@ OrderTracker
 - **Order submission**: Orders are not sent to Polymarket. A local record is created with a generated `order_id`, storing the side, size, and limit price.
 - **Fill simulation**: On every poll cycle, the tracker checks the relevant token price from the TA JSON file (`marketUp` for UP orders, `marketDown` for DOWN orders):
   - A **BUY** order is considered filled when `token_price <= order_limit_price`
-  - A **SELL** order is considered filled when `token_price >= order_limit_price`
+  - A **SELL** order is considered filled when `token_price >= order_limit_price` — this check only runs after the corresponding BUY order has already been marked filled
 - **Fill price**: The simulated fill price is the order's limit price (not the current market price).
 - **Order cancellation**: The local record is simply marked as cancelled.
 
@@ -166,9 +166,11 @@ When a market expires (`timeLeftMin <= 0` or `marketSlug` changes), the bot must
 **SELL order (submitted immediately after the BUY order is submitted):**
 - Side: same token as BUY
 - Size: 10 shares
-- Price: BUY token price + 30%, capped at 99¢
+- Price: BUY order's limit price + 30%, capped at 99¢
 
-**Expiry behavior:** If the market expires before the SELL order fills → **loss**.
+**Expiry behavior:**
+- If the market expires and the BUY order was never filled → cancel both orders, record **no trade** (no P&L impact). Strategy resets for the next market.
+- If the BUY order was filled but the SELL order was not yet filled → **loss**.
 
 ---
 
@@ -189,9 +191,11 @@ When a market expires (`timeLeftMin <= 0` or `marketSlug` changes), the bot must
 **SELL order (submitted immediately after the BUY order is submitted):**
 - Side: same token as BUY
 - Size: 10 shares
-- Price: BUY token price + 40%, capped at 99¢
+- Price: BUY order's limit price + 40%, capped at 99¢
 
-**Expiry behavior:** If the market expires before the SELL order fills → **loss**.
+**Expiry behavior:**
+- If the market expires and the BUY order was never filled → cancel both orders, record **no trade** (no P&L impact). Strategy resets for the next market.
+- If the BUY order was filled but the SELL order was not yet filled → **loss**.
 
 ---
 
@@ -252,7 +256,7 @@ The frontend is served by the Python backend and updated in real time via **Serv
 | Field | Description |
 |---|---|
 | Mode | `DRYRUN` or `LIVE` |
-| Strategy status | `PENDING`, `RUNNING`, or `COMPLETED` for each strategy |
+| Strategy status | `PENDING`, `ENTERING`, `RUNNING`, `EXITING`, or `COMPLETED` for each strategy |
 | Global P&L | Combined P&L across all strategies and markets |
 
 **Per strategy (shown when RUNNING or COMPLETED):**
